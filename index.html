@@ -145,13 +145,23 @@
 </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
 
-    const cfg = { databaseURL: "https://flachback-m34h20-default-rtdb.firebaseio.com/" };
-    const app = initializeApp(cfg);
+    const firebaseConfig = {
+        apiKey: "AIzaSyAEE414kUNvzTpWKao0VYHQC5linSrHFbA",
+        authDomain: "flashback-70367.firebaseapp.com",
+        projectId: "flashback-70367",
+        storageBucket: "flashback-70367.firebasestorage.app",
+        messagingSenderId: "802996244307",
+        appId: "1:802996244307:web:6f3ff7c053e361b878dba6",
+        measurementId: "G-GV6F1S1J63",
+        databaseURL: "https://flashback-70367-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+
+    const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const cloudRef = ref(db, 'memories_v4');
+    const cloudRef = ref(db, 'memories_v5');
 
     window.unlockApp = () => {
         document.getElementById('gate').style.transform = "translateY(-100%)";
@@ -159,9 +169,10 @@
     };
 
     window.toggleMenu = () => {
-        document.getElementById('sideMenu').classList.toggle('active');
+        const menu = document.getElementById('sideMenu');
         const overlay = document.getElementById('overlay');
-        overlay.style.display = overlay.style.display === 'block' ? 'none' : 'block';
+        menu.classList.toggle('active');
+        overlay.style.display = menu.classList.contains('active') ? 'block' : 'none';
     };
 
     window.switchTab = (id, el) => {
@@ -194,23 +205,36 @@
         let b64 = null;
         if(file) {
             const r = new FileReader();
-            b64 = await new Promise(res => { r.onload = (e) => res(e.target.result); r.readAsDataURL(file); });
+            b64 = await new Promise(res => {
+                r.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = 400; canvas.height = (img.height / img.width) * 400;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        res(canvas.toDataURL('image/jpeg', 0.5));
+                    };
+                    img.src = e.target.result;
+                };
+                r.readAsDataURL(file);
+            });
         }
         push(cloudRef, {
             sender: localStorage.getItem('u_name') || "مستخدم مجهول",
             meta: `${localStorage.getItem('u_role') || ""} - ${localStorage.getItem('u_grade') || ""}`,
-            pfp: localStorage.getItem('u_pfp') || "https://cdn-icons-png.flaticon.com/512/6997/6997662.png",
+            pfp: localStorage.getItem('u_pfp') || "https://via.placeholder.com/150",
             content: text, img: b64, time: new Date().toLocaleTimeString('ar-SA')
         });
         document.getElementById('msg-text').value = ""; document.getElementById('msg-file').value = "";
-        document.getElementById('file-status').innerText = ""; openPublish(false);
+        openPublish(false);
     };
 
-    let allMemories = [];
+    let allPosts = [];
     onValue(cloudRef, (snap) => {
         const data = snap.val();
-        allMemories = data ? Object.keys(data).map(k => data[k]).reverse() : [];
-        renderPosts(allMemories);
+        allPosts = data ? Object.keys(data).map(k => data[k]).reverse() : [];
+        renderPosts(allPosts);
     });
 
     function renderPosts(arr) {
@@ -219,14 +243,14 @@
             list.innerHTML += `<div class="post-card">
                 <div class="post-user"><img src="${m.pfp}"><div class="user-meta"><b>${m.sender}</b><span>${m.meta} • ${m.time}</span></div></div>
                 <p>${m.content}</p>
-                ${m.img ? `<img src="${m.img}" class="post-content-img">` : ""}
+                ${m.img ? `<img src="${m.img}" style="width:100%; border-radius:15px; margin-top:10px;">` : ""}
             </div>`;
         });
     }
 
     window.filterPosts = () => {
         const q = document.getElementById('search-input').value.toLowerCase();
-        renderPosts(allMemories.filter(m => m.content.toLowerCase().includes(q) || m.sender.toLowerCase().includes(q)));
+        renderPosts(allPosts.filter(m => m.content.toLowerCase().includes(q) || m.sender.toLowerCase().includes(q)));
     };
 
     window.onload = () => {
@@ -236,16 +260,12 @@
         if(localStorage.getItem('u_pfp')) document.getElementById('my-pfp').src = localStorage.getItem('u_pfp');
         updateProfile();
     };
+
 </script>
 <script type="module">
-  // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-database.js";
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
   const firebaseConfig = {
     apiKey: "AIzaSyAEE414kUNvzTpWKao0VYHQC5linSrHFbA",
     authDomain: "flashback-70367.firebaseapp.com",
@@ -253,12 +273,16 @@
     storageBucket: "flashback-70367.firebasestorage.app",
     messagingSenderId: "802996244307",
     appId: "1:802996244307:web:6f3ff7c053e361b878dba6",
-    measurementId: "G-GV6F1S1J63"
+    measurementId: "G-GV6F1S1J63",
+    // السطر اللي تحت هو اللي ناقصك وهو اللي بيخلي النشر يشتغل ✅
+    databaseURL: "https://flashback-70367-default-rtdb.asia-southeast1.firebasedatabase.app"
   };
 
-  // Initialize Firebase
   const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
+  const db = getDatabase(app);
+  const cloudRef = ref(db, 'memories_v5');
+
+  // هنا تحطين باقي وظائف النشر (publishToCloud) وعرض المنشورات (onValue)
 </script>
 </body>
 </html>
